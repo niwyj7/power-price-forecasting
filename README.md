@@ -1,11 +1,33 @@
 # power-price-forecasting
-🚀 Model Architecture & Methodology
-This project implements a high-frequency (15-minute interval) spatial-temporal forecasting model designed for energy/power grid data.
-1. Data Processing Pipeline
-Spatial Grid Mapping: The model extracts coordinates from raw metadata and maps them into a ranked geographical grid. This allows the model to treat different weather stations or sensing points as discrete "nodes" in a graph-like structure.High-Res Interpolation: To capture rapid fluctuations, hourly meteorological data is upsampled to a 15-minute frequency using Cubic Interpolation, ensuring smooth and realistic transitions between time steps.Feature Engineering: Beyond raw variables, the model calculates physical derivatives such as wind speed cubes (directly proportional to wind power potential) and log-transforms for variance stabilization.
-2.  Temporal Logic: Window & Decomposition
-The model utilizes a DLinear (Decomposition Linear) backbone to process time series:Lookback Window (Size 24): The model "sees" a 6-hour historical context (24 points $\times$ 15 min) up to and including the current forecast timestamp ($t$). This enables the model to utilize real-time weather forecasts to predict immediate energy output.Series Decomposition (Kernel 7): Within each window, the model employs a moving average kernel to split the signal into two distinct components:Trend Component: Captures the "inertia" and low-frequency drift (e.g., the steady rise in temperature from morning to noon). This prevents the model from being misled by instantaneous noise.Seasonal Component: Captures high-frequency fluctuations and sudden changes (e.g., rapid cloud cover shifts or wind gusts).
-3. Spatial-Temporal Integration (DLNet)
-Unlike standard time-series models, DLNet processes data across three dimensions:Feature Dimension: Non-linear transformation via Fully Connected Networks (FCN) and ReLU activation.Temporal Dimension: DLinear layers extract trend and seasonal patterns across the 6-hour window.Spatial Dimension (fcn_graph): A specialized linear layer with L1 Regularization acts as a spatial aggregator. It learns to "weight" the importance of different geographical locations, focusing on the most influential grid nodes for the final prediction.
-4. Training Strategy
-The model supports Rolling Training. It retrains on a 24-day lookback window prior to each prediction date to adapt to seasonal shifts and evolving weather patterns, ensuring the weights remain optimized for the most recent data distribution.
+
+---
+
+## 🚀 Model Architecture: DLNet (Spatial-Temporal Forecasting)
+
+This repository implements a **Spatial-Temporal DLinear** model for 15-minute energy forecasting. It maps multi-node weather features to a single regional target (e.g., Grid Load/Price).
+
+### 1. Data Pipeline
+
+* **Resolution:** 15-minute frequency via **Cubic Interpolation**.
+* **Spatial Mapping:** Extracts lat/lon coordinates into a ranked grid of geographical nodes.
+* **Feature Engineering:** Includes wind-cube physics, time-of-day encoding, and log-transforms for variance stabilization.
+
+### 2. Temporal Logic (The DLinear Backbone)
+
+The model processes a **6-hour lookback window** () including the current forecast point ().
+
+* **Series Decomposition (Kernel 7):** Uses a moving average to split signals into **Trend** and **Seasonal** components.
+* **Why Trend matters?** It captures the "inertia" of weather patterns (e.g., steady warming), ensuring the model isn't misled by instantaneous noise while predicting "now."
+
+### 3. Spatial Aggregation
+
+* **Node Fusion:** A specialized `fcn_graph` layer aggregates features from all geographical grid points.
+* **Sparse Learning:** Applied **L1 Regularization** on spatial weights to automatically identify and prioritize the most influential weather stations/grid nodes.
+
+### 4. Training Strategy
+
+* **Rolling Training:** The model retrains on a **24-day sliding window** to adapt to seasonal shifts.
+* **Loss Function:** MSE with L1 Sparsity penalty for robust spatial-temporal feature selection.
+
+---
+
